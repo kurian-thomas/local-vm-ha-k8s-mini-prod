@@ -1,0 +1,16 @@
+---
+- name: Install Calico operator
+  command: >
+    kubectl apply 
+    --kubeconfig /etc/kubernetes/admin.conf 
+    --server-side 
+    -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/tigera-operator.yaml
+  when: (kubeadm_init is defined and kubeadm_init is changed) or (kubeadm_conf.stat.exists)
+
+- name: Install Calico CRDs
+  command: >
+    kubectl apply 
+    --kubeconfig /etc/kubernetes/admin.conf 
+    --server-side 
+    -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/custom-resources.yaml
+  when: (kubeadm_init is defined and kubeadm_init is changed) or (kubeadm_conf.stat.exists)

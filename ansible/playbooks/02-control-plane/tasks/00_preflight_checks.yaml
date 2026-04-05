@@ -1,0 +1,13 @@
+---
+- name: Check if cluster is already initialized
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_conf
+
+- name: Pre-bind VIP to interface (Bootstrap workaround)
+  shell: |
+    if ! ip addr show {{ ansible_facts['default_ipv4']['interface'] }} | grep -q "{{ ansible_facts['env']['VIP_ADDRESS'] }}"; then
+      ip addr add {{ ansible_facts['env']['VIP_ADDRESS'] }}/24 dev {{ ansible_facts['default_ipv4']['interface'] }}
+    fi
+  when: not kubeadm_conf.stat.exists
+  changed_when: false

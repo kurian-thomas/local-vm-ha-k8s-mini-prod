@@ -1,0 +1,23 @@
+---
+- name: Initialize Kubernetes Control Plane
+  hosts: masters[0]
+  become: yes
+  vars:
+    kube_user: ansible
+    kube_home: "/home/{{ kube_user }}"
+
+  tasks:
+    - name: Preflight checks
+      include_tasks: tasks/00_preflight_checks.yaml
+
+    - name: Kubeadm init
+      include_tasks: tasks/01_kubeadm_init.yaml
+
+    - name: Dynamically add static kube-vip
+      include_tasks: tasks/02_dynamic_kube_vip.yaml 
+
+    - name: Install CNI
+      include_tasks: tasks/03_install_cni.yaml
+
+    - name: Check control plane readiness
+      include_tasks: tasks/04_wait_for_control_plane.yaml

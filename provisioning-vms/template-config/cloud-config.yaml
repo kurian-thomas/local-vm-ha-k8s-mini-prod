@@ -1,0 +1,17 @@
+#cloud-config
+users:
+  - name: ansible
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys: []
+
+packages:
+  - qemu-guest-agent
+  - python3
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - systemctl enable --now ssh
+
+write_files: []

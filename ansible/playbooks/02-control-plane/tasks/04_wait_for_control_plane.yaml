@@ -1,0 +1,9 @@
+---
+- name: Wait for Control Plane to be Ready
+  become_user: "{{ kube_user }}"
+  command: >
+    kubectl wait --for=condition=Ready node/{{ ansible_facts['hostname'] | lower }} --timeout=300s
+  environment:
+    KUBECONFIG: "{{ kube_home }}/.kube/config"
+  # Only run if the init happened or cluster already exists
+  when: (kubeadm_init is defined and kubeadm_init is changed) or (kubeadm_conf.stat.exists)

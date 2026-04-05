@@ -1,0 +1,43 @@
+---
+- name: Setup kube-vip for HA Control Plane
+  block:
+    - name: Ensure manifests directory exists
+      file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        mode: '0755'
+
+    - name: Pull kube-vip image
+      shell: ctr image pull ghcr.io/kube-vip/kube-vip:v0.8.0
+      changed_when: false
+
+    - name: Generate kube-vip static pod manifest
+      shell: |
+        ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v0.8.0 vip /kube-vip manifest pod \
+          --interface "{{ ansible_facts['default_ipv4']['interface'] }}" \
+          --address "{{ ansible_facts['env']['VIP_ADDRESS'] }}" \
+          --controlplane \
+          --services \
+          --arp \
+          --leaderElection > /etc/kubernetes/manifests/kube-vip.yaml
+      args:
+        creates: /etc/kubernetes/manifests/kube-vip.yaml
+  when: 
+    - kubeadm_conf is defined
+    - not kubeadm_conf.stat.exists
+    - ansible_facts['env']['VIP_ADDRESS'] is defined
+
+- name: Wait for kube-vip to initialize and grab leader lease
+  pause:
+    seconds: 15
+  when: 
+    - kubeadm_conf is defined
+    - not kubeadm_conf.stat.exists
+
+- name: Remove temporary bootstrap VIP (Force kube-vip to take over)
+  shell: |
+    ip addr del {{ ansible_facts['env']['VIP_ADDRESS'] }}/24 dev {{ ansible_facts['default_ipv4']['interface'] }}
+  ignore_errors: yes
+  when: 
+    - kubeadm_conf is defined
+    - not kubeadm_conf.stat.exists

@@ -1,0 +1,103 @@
+---
+# tasks/06_ha_setup.yaml
+# Runs only on masters (enforced by `when` in the parent play)
+
+- name: Install keepalived and haproxy
+  ansible.builtin.package:
+    name:
+      - keepalived
+      - haproxy
+    state: present
+
+# ── keepalived ────────────────────────────────────────────────────────────────
+
+- name: Detect primary network interface
+  ansible.builtin.set_fact:
+    primary_iface: "{{ ansible_default_ipv4.interface }}"
+
+- name: Configure keepalived
+  ansible.builtin.copy:
+    dest: /etc/keepalived/keepalived.conf
+    mode: '0644'
+    content: |
+      vrrp_script chk_haproxy {
+          script "killall -0 haproxy"
+          interval 2
+          weight 2
+      }
+
+      vrrp_instance VI_1 {
+          state {{ 'MASTER' if inventory_hostname == groups['masters'][0] else 'BACKUP' }}
+          interface {{ primary_iface }}
+          virtual_router_id 51
+          priority {{ 101 - groups['masters'].index(inventory_hostname) }}
+          advert_int 1
+          authentication {
+              auth_type PASS
+              auth_pass k8s_vip_pass
+          }
+          virtual_ipaddress {
+              {{ k8s_vip }}/{{ k8s_vip_prefix | default('24') }}
+          }
+          track_script {
+              chk_haproxy
+          }
+      }
+  notify: Restart keepalived
+
+# ── haproxy ───────────────────────────────────────────────────────────────────
+
+- name: Configure haproxy
+  ansible.builtin.copy:
+    dest: /etc/haproxy/haproxy.cfg
+    mode: '0644'
+    content: |
+      global
+          log /dev/log local0
+          maxconn 2000
+          daemon
+
+      defaults
+          log global
+          mode tcp
+          option tcplog
+          option dontlognull
+          timeout connect 5s
+          timeout client  50s
+          timeout server  50s
+
+      frontend k8s-api
+          bind *:6443
+          default_backend k8s-masters
+
+      backend k8s-masters
+          balance roundrobin
+          option tcp-check
+          {% for host in groups['masters'] %}
+          server {{ host }} {{ hostvars[host]['ansible_default_ipv4']['address'] }}:6443 check
+          {% endfor %}
+  notify: Restart haproxy
+
+# ── service state ─────────────────────────────────────────────────────────────
+
+- name: Enable and start keepalived
+  ansible.builtin.systemd:
+    name: keepalived
+    enabled: true
+    state: started
+
+- name: Enable and start haproxy
+  ansible.builtin.systemd:
+    name: haproxy
+    enabled: true
+    state: started
+
+- name: Wait for VIP to become available
+  ansible.builtin.wait_for:
+    host: "{{ k8s_vip }}"
+    port: 6443
+    timeout: 30
+  delegate_to: localhost
+  become: false
+  when: inventory_hostname == groups['masters'][0]
+  ignore_errors: true   # expected before kubeadm init; just verifies routing

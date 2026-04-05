@@ -1,0 +1,15 @@
+---
+- name: Check if swap is currently enabled
+  ansible.builtin.command: swapon --show --noheadings
+  register: swapon_status
+  changed_when: false
+
+- name: Disable swap immediately
+  ansible.builtin.command: swapoff -a
+  when: swapon_status.stdout | length > 0
+
+- name: Remove swap entries from /etc/fstab
+  ansible.posix.mount:
+    name: none
+    fstype: swap
+    state: absent

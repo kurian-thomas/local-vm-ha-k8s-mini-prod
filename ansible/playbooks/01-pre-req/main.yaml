@@ -1,0 +1,26 @@
+---
+- name: Configure Node Prerequisites for Kubernetes
+  hosts: k8s_cluster
+  become: true
+  tasks:
+    - name: Disable Swap
+      ansible.builtin.import_tasks: tasks/01_disable_swap.yaml
+
+    - name: Configure Kernel Modules
+      ansible.builtin.import_tasks: tasks/02_kernel_modules.yaml
+
+    - name: Set Sysctl Parameters
+      ansible.builtin.import_tasks: tasks/03_sysctl_params.yaml
+
+    - name: Install Container Runtime (containerd)
+      ansible.builtin.import_tasks: tasks/04_containerd.yaml
+
+    - name: Install Kubernetes Binaries
+      ansible.builtin.import_tasks: tasks/05_k8s_binaries.yaml
+
+  handlers:
+    - name: Restart containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        enabled: true
