@@ -34,10 +34,10 @@
           advert_int 1
           authentication {
               auth_type PASS
-              auth_pass k8s_vip_pass
+              auth_pass {{ keepalived_auth_pass }}
           }
           virtual_ipaddress {
-              {{ k8s_vip }}/{{ k8s_vip_prefix | default('24') }}
+              {{ k8s_vip }}/{{ k8s_vip_prefix }}
           }
           track_script {
               chk_haproxy

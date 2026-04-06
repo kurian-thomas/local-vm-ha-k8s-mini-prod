@@ -26,15 +26,15 @@ append-runcmd() {
     ]
   ' "$OUT_FILE"
 
-  # --- SKELETON KEY ---
-  # Inject plaintext passwords and enable password auth temporarily for debugging
-  yq -Y -i '
-    .chpasswd = {
-      "list": "root:password\nansible:password",
-      "expire": false
-    } |
-    .ssh_pwauth = true
-  ' "$OUT_FILE"
+  # --- SKELETON KEY ---                                                                                                                                                  │
+  # Inject plaintext passwords and enable password auth temporarily for debugging                                                                                         │
+  # │    yq -Y -i '                                                                                                                                                              │
+  # │      .chpasswd = {                                                                                                                                                         │
+  # │        "list": "root:password\nansible:password",                                                                                                                          │
+  # │        "expire": false                                                                                                                                                     │
+  # │      } |                                                                                                                                                                   │
+  # │      .ssh_pwauth = true                                                                                                                                                    │
+  # │    ' "$OUT_FILE"
 
   # Restore #cloud-config at the very end
   sed -i '1i #cloud-config' "$OUT_FILE"
@@ -71,4 +71,47 @@ append-env-vars() {
       "append": true
     }]
   ' "$OUT_FILE"
+}
+
+verify_cloud_image() {
+  IMAGE_BASE_URL="${IMAGE_URL%/*}"
+  CHECKSUMS_DIR="/tmp/ubuntu-cloud-image-checksums"
+  SHA256SUMS_PATH="$CHECKSUMS_DIR/SHA256SUMS"
+  SHA256SUMS_SIG_PATH="$CHECKSUMS_DIR/SHA256SUMS.gpg"
+  UBUNTU_IMAGE_KEY="D2EB44626FDDC30B513D5BB71A5D6C4C7DB87C81"
+
+  if ! command -v gpg >/dev/null 2>&1; then
+    echo "Error: gpg is required but not installed."
+    exit 1
+  fi
+
+  if ! command -v sha256sum >/dev/null 2>&1; then
+    echo "Error: sha256sum is required but not installed."
+    exit 1
+  fi
+
+  mkdir -p "$CHECKSUMS_DIR"
+  curl -fsSL -o "$SHA256SUMS_PATH" "$IMAGE_BASE_URL/SHA256SUMS"
+  curl -fsSL -o "$SHA256SUMS_SIG_PATH" "$IMAGE_BASE_URL/SHA256SUMS.gpg"
+
+  if ! gpg --list-keys "$UBUNTU_IMAGE_KEY" >/dev/null 2>&1; then
+    gpg --keyid-format long --keyserver hkp://keyserver.ubuntu.com --recv-keys "$UBUNTU_IMAGE_KEY"
+  fi
+
+  gpg --keyid-format long --verify "$SHA256SUMS_SIG_PATH" "$SHA256SUMS_PATH"
+
+  IMAGE_FILENAME="$(basename "$IMAGE_URL")"
+  expected_hash="$(awk -v file="$IMAGE_FILENAME" '$2 ~ file {gsub(/^\*/, "", $2); if ($2==file) {print $1; exit}}' "$SHA256SUMS_PATH")"
+  if [ -z "$expected_hash" ]; then
+    echo "Error: checksum entry not found for $IMAGE_FILENAME."
+    exit 1
+  fi
+
+  actual_hash="$(sudo sha256sum "$BASE_IMAGE_PATH" | awk '{print $1}')"
+  if [ "$expected_hash" != "$actual_hash" ]; then
+    echo "Error: checksum mismatch for $BASE_IMAGE_PATH."
+    exit 1
+  fi
+
+  echo "==> Cloud image checksum verified."
 }

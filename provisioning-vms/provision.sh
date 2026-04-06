@@ -2,6 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REQUIRE_VIP=true
 source "$SCRIPT_DIR/base-config-vars.sh"
 source "$SCRIPT_DIR/cloud-init-config-utils.sh"
 source "$SCRIPT_DIR/host-machine-utils.sh"
@@ -13,8 +14,10 @@ check_ufw_nat_rules
 # Check for base image
 if [ ! -f "$BASE_IMAGE_PATH" ]; then
   echo "==> Downloading Ubuntu 24.04 Cloud Image..."
-  sudo curl -o "$BASE_IMAGE_PATH" "$IMAGE_URL"
+  sudo curl -fsSL -o "$BASE_IMAGE_PATH" "$IMAGE_URL"
 fi
+
+verify_cloud_image
 
 # Execute Provisioning
 for NODE_INFO in "${NODES[@]}"; do

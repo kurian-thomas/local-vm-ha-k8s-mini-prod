@@ -6,8 +6,8 @@
 
 - name: Pre-bind VIP to interface (Bootstrap workaround)
   shell: |
-    if ! ip addr show {{ ansible_facts['default_ipv4']['interface'] }} | grep -q "{{ ansible_facts['env']['VIP_ADDRESS'] }}"; then
-      ip addr add {{ ansible_facts['env']['VIP_ADDRESS'] }}/24 dev {{ ansible_facts['default_ipv4']['interface'] }}
+    if ! ip addr show {{ ansible_facts['default_ipv4']['interface'] }} | grep -q "{{ k8s_vip }}"; then
+      ip addr add {{ k8s_vip }}/{{ k8s_vip_prefix }} dev {{ ansible_facts['default_ipv4']['interface'] }}
     fi
   when: not kubeadm_conf.stat.exists
   changed_when: false

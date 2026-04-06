@@ -20,7 +20,7 @@
       ansible.builtin.shell: |
         ctr -n k8s.io run --rm --net-host ghcr.io/kube-vip/kube-vip:v0.8.0 vip /kube-vip manifest pod \
           --interface "{{ ansible_facts['default_ipv4']['interface'] }}" \
-          --address "{{ vip_address | default('192.168.122.200') }}" \
+          --address "{{ k8s_vip }}" \
           --controlplane \
           --services \
           --arp \

@@ -2,14 +2,14 @@
 - name: Initialize the cluster with kubeadm
   command: >
     kubeadm init
-    --control-plane-endpoint "{{ ansible_facts['env']['VIP_ADDRESS'] }}:6443"
+    --control-plane-endpoint "{{ k8s_vip }}:6443"
     --apiserver-advertise-address "{{ ansible_facts['default_ipv4']['address'] }}"
     --upload-certs
     --pod-network-cidr=192.168.0.0/16
   register: kubeadm_init
   when: 
     - not kubeadm_conf.stat.exists
-    - ansible_facts['env']['VIP_ADDRESS'] is defined
+    - k8s_vip is defined
 
 - name: Setup kubeconfig for ansible user
   block:

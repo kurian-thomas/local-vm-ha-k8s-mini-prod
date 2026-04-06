@@ -37,12 +37,12 @@
 
     - name: Test routing via the Control Plane VIP
       ansible.builtin.uri:
-        url: "http://192.168.122.200:{{ nodeport.stdout }}"
+        url: "http://{{ k8s_vip }}:{{ nodeport.stdout }}"
         return_content: yes
       register: curl_test
 
     - name: Validate successful response
       ansible.builtin.debug:
         msg: >
-          SUCCESS! Traffic successfully routed through the VIP (192.168.122.200). 
+          SUCCESS! Traffic successfully routed through the VIP ({{ k8s_vip }}).
           Pod Response: {{ curl_test.content | split('\n') | first }}

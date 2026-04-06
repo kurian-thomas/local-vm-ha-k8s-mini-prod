@@ -15,7 +15,7 @@
       shell: |
         ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v0.8.0 vip /kube-vip manifest pod \
           --interface "{{ ansible_facts['default_ipv4']['interface'] }}" \
-          --address "{{ ansible_facts['env']['VIP_ADDRESS'] }}" \
+          --address "{{ k8s_vip }}" \
           --controlplane \
           --services \
           --arp \
@@ -25,7 +25,7 @@
   when: 
     - kubeadm_conf is defined
     - not kubeadm_conf.stat.exists
-    - ansible_facts['env']['VIP_ADDRESS'] is defined
+    - k8s_vip is defined
 
 - name: Wait for kube-vip to initialize and grab leader lease
   pause:
@@ -36,7 +36,7 @@
 
 - name: Remove temporary bootstrap VIP (Force kube-vip to take over)
   shell: |
-    ip addr del {{ ansible_facts['env']['VIP_ADDRESS'] }}/24 dev {{ ansible_facts['default_ipv4']['interface'] }}
+    ip addr del {{ k8s_vip }}/{{ k8s_vip_prefix }} dev {{ ansible_facts['default_ipv4']['interface'] }}
   ignore_errors: yes
   when: 
     - kubeadm_conf is defined

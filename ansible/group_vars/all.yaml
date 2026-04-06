@@ -1,0 +1,4 @@
+---
+k8s_vip: 192.168.122.200
+k8s_vip_prefix: 24
+keepalived_auth_pass: "k8s_vip_pass"
