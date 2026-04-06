@@ -8,8 +8,57 @@
   ansible.builtin.command: swapoff -a
   when: swapon_status.stdout | length > 0
 
-- name: Remove swap entries from /etc/fstab
+- name: Declaratively remove the default Ubuntu swap file from /etc/fstab
   ansible.posix.mount:
-    name: none
+    src: /swap.img     # The default swap file used in standard Ubuntu 24.04 installs
+    path: none
     fstype: swap
     state: absent
+
+- name: Systemd mask all known zram services to disable on boot
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+    state: stopped
+    enabled: false
+  loop:
+    - systemd-zram-generator.service
+    - zramswap.service
+    - zram-config.service
+  failed_when: false
+
+- name: Disable zswap immediately (for the current session)
+  ansible.builtin.shell: echo 0 > /sys/module/zswap/parameters/enabled
+  ignore_errors: true
+  changed_when: false
+
+- name: Check if zswap is already configured in GRUB
+  ansible.builtin.command: grep -q "zswap.enabled" /etc/default/grub
+  register: grub_check
+  failed_when: false
+  changed_when: false
+
+- name: Append zswap.enabled=0 to GRUB_CMDLINE_LINUX_DEFAULT if missing
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=")(.*)(")$'
+    replace: '\1\2 zswap.enabled=0\3'
+  when: grub_check.rc != 0
+  notify: Update GRUB
+
+- name: Ensure zswap.enabled is set to 0 if parameter already exists
+  ansible.builtin.replace:
+    path: /etc/default/grub
+    regexp: 'zswap\.enabled=[^" ]*'
+    replace: 'zswap.enabled=0'
+  when: grub_check.rc == 0
+  notify: Update GRUB
+
+- name: Confirm no swap is active
+  ansible.builtin.command: swapon --show --noheadings
+  register: final_swap
+  changed_when: false
+
+- name: Show final swap status
+  ansible.builtin.debug:
+    msg: "Swap devices remaining: {{ final_swap.stdout_lines | default(['none']) }}"

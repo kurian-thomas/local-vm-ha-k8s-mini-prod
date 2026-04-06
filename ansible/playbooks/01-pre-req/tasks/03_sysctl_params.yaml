@@ -1,3 +1,4 @@
+---
 - name: Set sysctl parameters for Kubernetes networking
   ansible.posix.sysctl:
     name: "{{ item.name }}"

@@ -1,0 +1,9 @@
+---
+- name: Run pre-requisite validation script on remote nodes
+  ansible.builtin.script: 
+    cmd: validation/validate_pre_req.py
+  register: validation_output
+
+- name: Show validation results
+  ansible.builtin.debug:
+    var: validation_output.stdout_lines

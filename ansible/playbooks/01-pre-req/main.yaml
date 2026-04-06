@@ -4,19 +4,22 @@
   become: true
   tasks:
     - name: Disable Swap
-      ansible.builtin.import_tasks: tasks/01_disable_swap.yaml
+      include_tasks: tasks/01_disable_swap.yaml
 
     - name: Configure Kernel Modules
       ansible.builtin.import_tasks: tasks/02_kernel_modules.yaml
 
     - name: Set Sysctl Parameters
-      ansible.builtin.import_tasks: tasks/03_sysctl_params.yaml
+      include_tasks: tasks/03_sysctl_params.yaml
 
     - name: Install Container Runtime (containerd)
-      ansible.builtin.import_tasks: tasks/04_containerd.yaml
+      include_tasks: tasks/04_containerd.yaml
 
     - name: Install Kubernetes Binaries
-      ansible.builtin.import_tasks: tasks/05_k8s_binaries.yaml
+      include_tasks: tasks/05_k8s_binaries.yaml
+
+    - name: Run validation Script
+      ansible.builtin.import_tasks: tasks/06_run_validation.yaml
 
   handlers:
     - name: Restart containerd
@@ -24,3 +27,6 @@
         name: containerd
         state: restarted
         enabled: true
+
+    - name: Update GRUB
+      ansible.builtin.command: update-grub
