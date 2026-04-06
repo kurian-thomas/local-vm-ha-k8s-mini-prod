@@ -1,0 +1,48 @@
+---
+- name: Phase 6 - Cluster Workload & Routing Validation (Traefik Whoami)
+  hosts: masters[0]
+  become: yes
+  environment:
+    # Ensure kubectl knows how to authenticate
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Deploy Traefik whoami test workload (3 replicas)
+      ansible.builtin.command: kubectl create deployment whoami-test --image=traefik/whoami --replicas=3
+      register: deploy_result
+      failed_when: 
+        - deploy_result.rc != 0 
+        - "'AlreadyExists' not in deploy_result.stderr"
+      changed_when: "'created' in deploy_result.stdout"
+
+    - name: Expose whoami as a NodePort Service
+      ansible.builtin.command: kubectl expose deployment whoami-test --port=80 --type=NodePort
+      register: expose_result
+      failed_when: 
+        - expose_result.rc != 0 
+        - "'AlreadyExists' not in expose_result.stderr"
+      changed_when: "'exposed' in expose_result.stdout"
+
+    - name: Wait for whoami pods to be fully ready
+      ansible.builtin.command: kubectl wait --for=condition=ready pod -l app=whoami-test --timeout=90s
+      changed_when: false
+
+    - name: Get the dynamically assigned NodePort
+      ansible.builtin.shell: kubectl get svc whoami-test -o jsonpath='{.spec.ports[0].nodePort}'
+      register: nodeport
+      changed_when: false
+
+    - name: Display the NodePort
+      ansible.builtin.debug:
+        msg: "Traefik Whoami is exposed on NodePort: {{ nodeport.stdout }}"
+
+    - name: Test routing via the Control Plane VIP
+      ansible.builtin.uri:
+        url: "http://192.168.122.200:{{ nodeport.stdout }}"
+        return_content: yes
+      register: curl_test
+
+    - name: Validate successful response
+      ansible.builtin.debug:
+        msg: >
+          SUCCESS! Traffic successfully routed through the VIP (192.168.122.200). 
+          Pod Response: {{ curl_test.content | split('\n') | first }}

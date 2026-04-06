@@ -1,0 +1,18 @@
+---
+- name: Phase 5 - High Availability & Worker Joining
+  hosts: all
+  become: yes
+  tasks:
+    - name: Generate join commands and certificate keys on the primary control plane
+      ansible.builtin.include_tasks: tasks/01_generate_join_data.yaml
+      when: inventory_hostname == groups['masters'][0]
+
+    - name: Join additional control plane nodes
+      ansible.builtin.include_tasks: tasks/02_join_masters.yaml
+      when: 
+        - inventory_hostname in groups['masters']
+        - inventory_hostname != groups['masters'][0]
+
+    - name: Join worker nodes
+      ansible.builtin.include_tasks: tasks/03_join_workers.yaml
+      when: inventory_hostname in groups['workers']

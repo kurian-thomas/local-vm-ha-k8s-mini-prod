@@ -64,3 +64,18 @@ ansible master-1 -i ansible/inventory.ini \
   -m ansible.builtin.script \
   -a "executable=/usr/bin/python3 ansible/playbooks/02-control-plane/validation/validate_control_plane.py"
 ```
+
+## Join Masters and works to the cluster
+
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/playbooks/03-join-nodes/main.yaml
+```
+
+## Validate cluster setup
+
+```bash
+ansible master-1 -i ansible/inventory.ini \
+  -b \
+  -m ansible.builtin.script \
+  -a "executable=/usr/bin/python3 ansible/playbooks/03-join-nodes/validation/validate_ha_join.py"
+```

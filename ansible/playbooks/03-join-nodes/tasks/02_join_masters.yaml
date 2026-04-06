@@ -1,0 +1,48 @@
+---
+- name: Check if master node is already joined
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf_master
+
+- name: Setup dynamic kube-vip for HA Control Plane
+  block:
+    - name: Ensure manifests directory exists
+      ansible.builtin.file:
+        path: /etc/kubernetes/manifests
+        state: directory
+        mode: '0755'
+
+    - name: Pull kube-vip image via containerd (k8s.io namespace)
+      ansible.builtin.command: ctr -n k8s.io image pull ghcr.io/kube-vip/kube-vip:v0.8.0
+      changed_when: false
+
+    - name: Generate kube-vip static pod manifest
+      ansible.builtin.shell: |
+        ctr -n k8s.io run --rm --net-host ghcr.io/kube-vip/kube-vip:v0.8.0 vip /kube-vip manifest pod \
+          --interface "{{ ansible_facts['default_ipv4']['interface'] }}" \
+          --address "{{ vip_address | default('192.168.122.200') }}" \
+          --controlplane \
+          --services \
+          --arp \
+          --leaderElection > /etc/kubernetes/manifests/kube-vip.yaml
+      args:
+        creates: /etc/kubernetes/manifests/kube-vip.yaml
+
+    - name: Wait for kube-vip to initialize and grab leader lease
+      ansible.builtin.pause:
+        seconds: 15
+  # ONLY run this block if the node hasn't been joined yet
+  when: not kubelet_conf_master.stat.exists
+
+- name: Join additional master nodes to the HA cluster
+  ansible.builtin.command: >
+    {{ hostvars[groups['masters'][0]]['join_command'] }}
+    --control-plane
+    --certificate-key {{ hostvars[groups['masters'][0]]['cert_key'] }}
+  when: not kubelet_conf_master.stat.exists
+  register: master_join_result
+
+- name: Print master join output
+  ansible.builtin.debug:
+    var: master_join_result.stdout_lines
+  when: master_join_result.changed
