@@ -1,4 +1,5 @@
 # check ansible group vars
+# change the vm ips as required
 
 mkdir -p ~/.kube
 ssh -i ~/.ssh/k8s_ansible_key ansible@192.168.122.45 "sudo cp /etc/kubernetes/admin.conf /home/ansible/config && sudo chown ansible:ansible /home/ansible/config"
