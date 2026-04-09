@@ -1,5 +1,5 @@
 <h1 align="center" border=0>
-  K8s Local VM Mini-Prod-ish setup
+  K8s Local VM Mini-Prod(ish) setup
   <br>
 </h1>
 
