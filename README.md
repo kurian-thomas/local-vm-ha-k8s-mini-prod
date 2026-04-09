@@ -1,4 +1,4 @@
-# K8s Local VM Prod-ish setup learning
+# K8s Local VM Mini-Prod-ish setup
 
 ## Ansible Key-Pair Generation
 
