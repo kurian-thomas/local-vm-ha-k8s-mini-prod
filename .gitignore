@@ -1,3 +1,7 @@
 # Ignore build binaries
 bin/
 **/bin/
+
+# Ansible ignored files
+ansible/inventory.ini
+ansible/inventory_builder.log
