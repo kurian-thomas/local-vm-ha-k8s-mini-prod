@@ -9,7 +9,7 @@ create-user-data-inject-file() {
 
   # yq requires the variable to be exported locally to use env.SSH_PUB_KEY
   export SSH_PUB_KEY
-  yq -Y -i '.users[0].ssh_authorized_keys = [env.SSH_PUB_KEY]' "$OUT_FILE"
+  yq -i '.users[0].ssh_authorized_keys = [strenv(SSH_PUB_KEY)]' "$OUT_FILE"
 }
 
 append-runcmd() {
@@ -19,10 +19,10 @@ append-runcmd() {
   echo "==> Injecting runcmd for $HOSTNAME"
   
   export HOSTNAME
-  yq -Y -i '
+  yq -i '
     .runcmd += [
-      "echo Running cloud-init on \(env.HOSTNAME)",
-      "hostnamectl set-hostname \(env.HOSTNAME)"
+      "echo Running cloud-init on " + strenv(HOSTNAME),
+      "hostnamectl set-hostname " + strenv(HOSTNAME)
     ]
   ' "$OUT_FILE"
 
@@ -48,9 +48,9 @@ create-metadata-inject-file() {
   cp "$META_TEMPLATE" "$OUT_FILE"
 
   export HOSTNAME
-  yq -Y -i '
-    ."instance-id" = env.HOSTNAME |
-    ."local-hostname" = env.HOSTNAME
+  yq -i '
+  ."instance-id" = strenv(HOSTNAME) |
+  ."local-hostname" = strenv(HOSTNAME)
   ' "$OUT_FILE"
 }
 
@@ -64,12 +64,12 @@ append-env-vars() {
   export VIP_ADDRESS
 
   # We use 'append: true' so we don't overwrite existing entries in /etc/environment
-  yq -Y -i '
-    .write_files += [{
-      "path": "/etc/environment",
-      "content": "VIP_ADDRESS=" + env.VIP_ADDRESS + "\n",
-      "append": true
-    }]
+  yq -i '
+  .write_files += [{
+    "path": "/etc/environment",
+    "content": "VIP_ADDRESS=" + strenv(VIP_ADDRESS) + "\n",
+    "append": true
+  }]
   ' "$OUT_FILE"
 }
 

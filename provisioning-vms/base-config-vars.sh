@@ -36,7 +36,7 @@ if [ "${REQUIRE_VIP:-}" = "true" ]; then
     exit 1
   fi
 
-  VIP_ADDRESS="$(yq -r '.k8s_vip // empty' "$ANSIBLE_VARS_FILE")"
+  VIP_ADDRESS="$(yq '.k8s_vip // ""' "$ANSIBLE_VARS_FILE")"
   if [ -z "$VIP_ADDRESS" ]; then
     echo "Error: k8s_vip not set in $ANSIBLE_VARS_FILE."
     exit 1
@@ -45,8 +45,9 @@ fi
 
 # Define Nodes: "Hostname RAM(MB) vCPUs"
 NODES=(
-  "master-1 4096 2"
-  "master-2 4096 2"
-  "master-3 4096 2"
-  "worker-1 8192 4"
+  "master-1 2048 2"
+  "master-2 2048 2"
+  "master-3 2048 2"
+  "worker-1 2048 2"
+  "worker-2 2048 2"
 )

@@ -61,5 +61,5 @@ for NODE_INFO in "${NODES[@]}"; do
 done
 
 echo "==> All VMs are booting. Waiting for IPs..."
-sleep 20
+sleep 30
 sudo virsh net-dhcp-leases default
