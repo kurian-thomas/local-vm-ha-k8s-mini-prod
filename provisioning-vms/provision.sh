@@ -60,6 +60,4 @@ for NODE_INFO in "${NODES[@]}"; do
   echo "==> $HOSTNAME provisioned."
 done
 
-echo "==> All VMs are booting. Waiting for IPs..."
-sleep 30
-sudo virsh net-dhcp-leases default
+wait_for_ips 60

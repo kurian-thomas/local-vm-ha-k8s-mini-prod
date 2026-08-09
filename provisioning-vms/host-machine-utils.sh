@@ -38,3 +38,31 @@ check_ufw_nat_rules() {
     exit 1
   fi
 }
+
+# Checks if DHCP assigns the IPs with a timeout
+# Assumes Ipv4
+wait_for_ips() {
+    local timeout=$1
+    # SECONDS is a built-in bash variable that tracks script execution time
+    local end_time=$((SECONDS + timeout))
+    
+    echo "==> All VMs are booting. Waiting for IPs (Timeout: ${timeout}s)..."
+
+    while [ $SECONDS -lt $end_time ]; do
+        # Capture the current leases
+        leases=$(sudo virsh net-dhcp-leases default)
+
+        # Use grep to look for an IPv4 address pattern. 
+        # This naturally ignores the table headers.
+        if echo "$leases" | grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}'; then
+            echo "==> IPs assigned!"
+            echo "$leases"
+            return 0
+        fi
+
+        sleep 2
+    done
+
+    echo "==> Error: Timeout of ${timeout}s reached waiting for IPs."
+    return 1
+}
