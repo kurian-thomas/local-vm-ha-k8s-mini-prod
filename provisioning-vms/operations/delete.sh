@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 source "$SCRIPT_ROOT/base-config-vars.sh"
-source "$SCRIPT_DIR/host-machine-utils.sh"
+source "$SCRIPT_ROOT/host-machine-utils.sh"
 
 delete_subnet_firewall_rule_info
 

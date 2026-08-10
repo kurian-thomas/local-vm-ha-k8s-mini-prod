@@ -7,7 +7,7 @@ echo "==> Requesting graceful shutdown for selected VMs..."
 echo "==> Requesting graceful shutdown for selected VMs..."
 
 # Get list of running VMs and filter by name
-for vm in $(sudo virsh list --name --state-running | grep -E '^(master-|worker-)'); do
+for vm in $(sudo virsh list --name --state-running | grep -E '^(master-|worker-|jumpbox|load-balancer)'); do
     echo "Shutting down $vm..."
     sudo virsh shutdown "$vm"
 done
