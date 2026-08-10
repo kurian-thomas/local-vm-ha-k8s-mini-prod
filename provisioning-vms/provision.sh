@@ -10,6 +10,7 @@ source "$SCRIPT_DIR/host-machine-utils.sh"
 # Host machine checks
 check_ufw_virbr0_allow_rules
 check_ufw_nat_rules
+check_if_vms_can_access_the_internet
 
 # Check for base image
 if [ ! -f "$BASE_IMAGE_PATH" ]; then
