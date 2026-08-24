@@ -54,6 +54,17 @@ NODES=(
   "load-balancer-1 1024 1"
 )
 
+# hardway unrefined
+# NODES=(
+#   "jumpbox 512 1"
+#   "master-1 2048 2"
+#   "master-2 2048 2"
+#   "master-3 2048 2"
+#   "worker-1 2048 2"
+#   "worker-2 2048 2"
+#   "load-balancer-1 1024 1"
+# )
+
 # normal kube adm cluster with ansible
 # "master-1 2048 2"
 # "master-2 2048 2"

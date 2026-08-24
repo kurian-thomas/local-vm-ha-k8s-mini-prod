@@ -62,3 +62,6 @@ for NODE_INFO in "${NODES[@]}"; do
 done
 
 wait_for_ips 60
+
+# ssh-add -t 60m <key_loc>
+# ssh -i <key_loc> ansible@<vm_ip>
